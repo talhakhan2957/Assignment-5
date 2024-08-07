@@ -1,0 +1,236 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
+
+public class ScientificCalculator extends JFrame implements ActionListener {
+
+    private JTextField display;
+    private JPanel buttonPanel;
+    private String lastOperator;
+    private boolean startNewNumber;
+    private Stack<Double> stack;
+
+    public ScientificCalculator() {
+        setTitle("Scientific Calculator");
+        setSize(400, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        display = new JTextField();
+        display.setFont(new Font("Arial", Font.BOLD, 24));
+        display.setHorizontalAlignment(JTextField.RIGHT);
+        display.setEditable(false);
+        add(display, BorderLayout.NORTH);
+
+        buttonPanel = new JPanel();
+        buttonPanel.setLayout(new GridLayout(7, 4));
+        add(buttonPanel, BorderLayout.CENTER);
+
+        String[] buttons = {
+                "7", "8", "9", "/",
+                "4", "5", "6", "*",
+                "1", "2", "3", "-",
+                "0", ".", "=", "+",
+                "sin", "cos", "tan", "sqrt",
+                "log", "ln", "^", "1/x",
+                "(", ")", "C", "CE",
+                "asin", "acos", "atan", "stddev",
+                "mean", "median", "mode"
+        };
+
+        for (String text : buttons) {
+            JButton button = new JButton(text);
+            button.setFont(new Font("Arial", Font.BOLD, 18));
+            button.addActionListener(this);
+            buttonPanel.add(button);
+        }
+
+        lastOperator = "";
+        startNewNumber = true;
+        stack = new Stack<>();
+
+        setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        new ScientificCalculator();
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String command = e.getActionCommand();
+
+        try {
+            if ("0123456789.".contains(command)) {
+                if (startNewNumber) {
+                    display.setText(command);
+                    startNewNumber = false;
+                } else {
+                    display.setText(display.getText() + command);
+                }
+            } else if ("+-*/".contains(command)) {
+                calculate(Double.parseDouble(display.getText()));
+                lastOperator = command;
+                startNewNumber = true;
+            } else if ("=".equals(command)) {
+                calculate(Double.parseDouble(display.getText()));
+                lastOperator = "";
+                startNewNumber = true;
+            } else if ("C".equals(command)) {
+                display.setText("");
+                stack.clear();
+                lastOperator = "";
+                startNewNumber = true;
+            } else if ("CE".equals(command)) {
+                display.setText("");
+                startNewNumber = true;
+            } else if ("sin".equals(command)) {
+                display.setText(String.valueOf(Math.sin(Math.toRadians(Double.parseDouble(display.getText())))));
+                startNewNumber = true;
+            } else if ("cos".equals(command)) {
+                display.setText(String.valueOf(Math.cos(Math.toRadians(Double.parseDouble(display.getText())))));
+                startNewNumber = true;
+            } else if ("tan".equals(command)) {
+                display.setText(String.valueOf(Math.tan(Math.toRadians(Double.parseDouble(display.getText())))));
+                startNewNumber = true;
+            } else if ("asin".equals(command)) {
+                display.setText(String.valueOf(Math.toDegrees(Math.asin(Double.parseDouble(display.getText())))));
+                startNewNumber = true;
+            } else if ("acos".equals(command)) {
+                display.setText(String.valueOf(Math.toDegrees(Math.acos(Double.parseDouble(display.getText())))));
+                startNewNumber = true;
+            } else if ("atan".equals(command)) {
+                display.setText(String.valueOf(Math.toDegrees(Math.atan(Double.parseDouble(display.getText())))));
+                startNewNumber = true;
+            } else if ("sqrt".equals(command)) {
+                display.setText(String.valueOf(Math.sqrt(Double.parseDouble(display.getText()))));
+                startNewNumber = true;
+            } else if ("log".equals(command)) {
+                display.setText(String.valueOf(Math.log10(Double.parseDouble(display.getText()))));
+                startNewNumber = true;
+            } else if ("ln".equals(command)) {
+                display.setText(String.valueOf(Math.log(Double.parseDouble(display.getText()))));
+                startNewNumber = true;
+            } else if ("^".equals(command)) {
+                calculate(Double.parseDouble(display.getText()));
+                lastOperator = "^";
+                startNewNumber = true;
+            } else if ("1/x".equals(command)) {
+                display.setText(String.valueOf(1 / Double.parseDouble(display.getText())));
+                startNewNumber = true;
+            } else if ("(".equals(command)) {
+                display.setText(display.getText() + "(");
+            } else if (")".equals(command)) {
+                display.setText(display.getText() + ")");
+            } else if ("mean".equals(command)) {
+                display.setText(String.valueOf(mean()));
+                startNewNumber = true;
+            } else if ("median".equals(command)) {
+                display.setText(String.valueOf(median()));
+                startNewNumber = true;
+            } else if ("mode".equals(command)) {
+                display.setText(String.valueOf(mode()));
+                startNewNumber = true;
+            } else if ("stddev".equals(command)) {
+                display.setText(String.valueOf(standardDeviation()));
+                startNewNumber = true;
+            }
+        } catch (NumberFormatException ex) {
+            display.setText("Error");
+            startNewNumber = true;
+        }
+    }
+
+    private void calculate(double x) {
+        if (lastOperator.isEmpty()) {
+            stack.push(x);
+        } else {
+            double y = stack.pop();
+            switch (lastOperator) {
+                case "+":
+                    stack.push(y + x);
+                    break;
+                case "-":
+                    stack.push(y - x);
+                    break;
+                case "*":
+                    stack.push(y * x);
+                    break;
+                case "/":
+                    stack.push(y / x);
+                    break;
+                case "^":
+                    stack.push(Math.pow(y, x));
+                    break;
+            }
+            display.setText(String.valueOf(stack.peek()));
+        }
+    }
+
+    private double mean() {
+        List<Double> numbers = getNumbersFromDisplay();
+        double sum = 0;
+        for (double num : numbers) {
+            sum += num;
+        }
+        return sum / numbers.size();
+    }
+
+    private double median() {
+        List<Double> numbers = getNumbersFromDisplay();
+        numbers.sort(Double::compareTo);
+        int middle = numbers.size() / 2;
+        if (numbers.size() % 2 == 0) {
+            return (numbers.get(middle - 1) + numbers.get(middle)) / 2.0;
+        } else {
+            return numbers.get(middle);
+        }
+    }
+
+    private double mode() {
+        List<Double> numbers = getNumbersFromDisplay();
+        double mode = numbers.get(0);
+        int maxCount = 0;
+        for (double num : numbers) {
+            int count = 0;
+            for (double elem : numbers) {
+                if (elem == num) {
+                    count++;
+                }
+            }
+            if (count > maxCount) {
+                maxCount = count;
+                mode = num;
+            }
+        }
+        return mode;
+    }
+
+    private double standardDeviation() {
+        List<Double> numbers = getNumbersFromDisplay();
+        double mean = mean();
+        double sumSquaredDifferences = 0;
+        for (double num : numbers) {
+            sumSquaredDifferences += Math.pow(num - mean, 2);
+        }
+        return Math.sqrt(sumSquaredDifferences / numbers.size());
+    }
+
+    private List<Double> getNumbersFromDisplay() {
+        String text = display.getText();
+        String[] parts = text.split(",");
+        List<Double> numbers = new ArrayList<>();
+        for (String part : parts) {
+            try {
+                numbers.add(Double.parseDouble(part.trim()));
+            } catch (NumberFormatException e) {
+                // Ignore invalid numbers
+            }
+        }
+        return numbers;
+    }
+}
